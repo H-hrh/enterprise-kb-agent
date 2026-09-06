@@ -52,3 +52,12 @@ app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 def index() -> FileResponse:
     """首页：聊天网页。"""
     return FileResponse(WEB_DIR / "index.html")
+
+
+# ---------- 直接运行入口（PyCharm 绿色三角 / python app/main.py） ----------
+if __name__ == "__main__":
+    import uvicorn
+
+    # 必须以字符串 "app.main:app" 传入而非 app 对象，
+    # 否则 --reload 的热重载子进程无法找到应用
+    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
