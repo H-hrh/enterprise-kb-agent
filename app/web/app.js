@@ -233,6 +233,8 @@ function handleEvent(evt, state) {
     state.sources = evt.data || [];
     renderSources(state);
   } else if (evt.type === "token") {
+    // 正文开始后清除决策状态行（Agent 循环中每次检索的状态由下一次事件覆盖）
+    state.statusEl.textContent = "";
     state.answerText += evt.data;
     // 流式过程中只更新回答区的文本（textContent 自动转义，防 XSS）
     const el = state.answerEl || renderAnswerArea(state);

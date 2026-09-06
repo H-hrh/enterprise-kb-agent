@@ -10,6 +10,8 @@
 
 from collections.abc import AsyncGenerator
 
+import json
+
 from openai import APIError, AsyncOpenAI
 
 from app.config import settings
@@ -77,3 +79,64 @@ async def stream_chat(
                 yield delta
     except APIError as e:
         raise RuntimeError(f"大模型流式调用失败：{e}") from e
+
+
+async def stream_chat_with_tools(
+    messages: list[dict],
+    tools: list[dict],
+    temperature: float = 0.3,
+) -> AsyncGenerator[tuple[str, object], None]:
+    """流式对话 + 工具调用支持：ReAct Agent 决策循环的核心。
+
+    大模型在一次响应里有两种可能：
+    - 直接输出回答文字 → 逐段 yield ("text", 文字片段)
+    - 要求调用工具     → 流结束后一次性 yield ("tools", 解析好的调用列表)
+
+    注意：流式传输中 tool_calls 的函数名和参数 JSON 是分片到达的，
+    要按 index 累积拼接，流结束后才能解析出完整的调用请求。
+    """
+    client = get_client()
+    try:
+        stream = await client.chat.completions.create(
+            model=settings.llm_model,
+            messages=messages,
+            temperature=temperature,
+            stream=True,
+            tools=tools,
+        )
+        tool_acc: dict[int, dict] = {}  # {index: {"id","name","arguments"}}
+        async for chunk in stream:
+            if not chunk.choices:
+                continue  # 流末尾的空 choices 块（仅含 usage 统计）
+            delta = chunk.choices[0].delta
+            if delta and delta.content:
+                yield "text", delta.content
+            if delta and delta.tool_calls:
+                for tc in delta.tool_calls:
+                    slot = tool_acc.setdefault(
+                        tc.index, {"id": "", "name": "", "arguments": ""}
+                    )
+                    if tc.id:
+                        slot["id"] += tc.id
+                    if tc.function and tc.function.name:
+                        slot["name"] += tc.function.name
+                    if tc.function and tc.function.arguments:
+                        slot["arguments"] += tc.function.arguments
+        if tool_acc:
+            calls: list[dict] = []
+            for idx in sorted(tool_acc):
+                slot = tool_acc[idx]
+                try:
+                    args = json.loads(slot["arguments"]) if slot["arguments"] else {}
+                except json.JSONDecodeError:
+                    args = {}  # 参数损坏时传空参，让模型在下轮自行纠正
+                calls.append(
+                    {
+                        "id": slot["id"] or f"call_{idx}",
+                        "name": slot["name"],
+                        "arguments": args,
+                    }
+                )
+            yield "tools", calls
+    except APIError as e:
+        raise RuntimeError(f"大模型工具调用失败（模型可能不支持 Function Calling）：{e}") from e

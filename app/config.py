@@ -51,6 +51,7 @@ class Settings(BaseSettings):
 
     # ---------- 对话 ----------
     max_history_turns: int = 10       # 每个会话最多保留的对话轮数（1 轮 = 1 问 1 答）
+    agent_max_rounds: int = 6         # Agent 决策循环最大轮数（每轮一次模型调用，防止死循环）
 
     # ---------- 文件上传 ----------
     max_upload_mb: int = 20           # 单文件大小上限（MB）

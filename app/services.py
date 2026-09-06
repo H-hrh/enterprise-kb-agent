@@ -38,9 +38,9 @@ retriever.refresh()
 # 3. 入库流水线
 pipeline = IngestionPipeline(vector_store, retriever)
 
-# 4. 对话链路
+# 4. 对话链路（ReAct Agent：检索器 + 记忆 + 入库流水线[list_documents 工具用]）
 memory = ConversationMemory()
-qa_chain = QAChain(retriever, memory)
+qa_chain = QAChain(retriever, memory, pipeline)
 
 logger.info(
     "服务组件初始化完成：已有片段 %d 条",
