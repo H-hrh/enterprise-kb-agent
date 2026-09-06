@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>企业知识库智能体</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <!-- 顶部标题栏 -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">📚</span>
+      <div>
+        <h1>企业知识库智能体</h1>
+        <p class="subtitle">RAG · 混合检索 · 重排序 · 流式问答</p>
+      </div>
+    </div>
+    <div id="healthBadge" class="badge badge-unknown">检查中…</div>
+  </header>
+
+  <!-- API Key 未配置时的警告条 -->
+  <div id="keyBanner" class="key-banner hidden">
+    ⚠️ 尚未配置 SILICONFLOW_API_KEY：请复制 <code>.env.example</code> 为 <code>.env</code> 并填入 API Key，然后重启服务。
+  </div>
+
+  <div class="layout">
+    <!-- 左侧：文档管理 -->
+    <aside class="sidebar">
+      <div class="upload-box">
+        <button id="uploadBtn" class="btn btn-primary btn-block">⬆ 上传文档</button>
+        <input type="file" id="fileInput" accept=".pdf,.docx,.md,.txt" hidden />
+        <p class="hint">支持 PDF / Word / Markdown / TXT，单文件 ≤ 20MB</p>
+      </div>
+
+      <h2 class="sidebar-title">知识库文档 <span id="docCount" class="count">0</span></h2>
+      <div id="docList" class="doc-list">
+        <p class="empty-tip">还没有文档，先上传一份吧</p>
+      </div>
+    </aside>
+
+    <!-- 右侧：聊天区 -->
+    <main class="chat-area">
+      <div id="messages" class="messages">
+        <div class="message assistant">
+          <div class="avatar">🤖</div>
+          <div class="bubble">
+            你好！我是企业知识库助手。上传文档后，可以向我提问文档中的内容，
+            我的回答会标注引用来源。试试问我：「年假有几天？」
+          </div>
+        </div>
+      </div>
+
+      <!-- 输入区 -->
+      <div class="input-area">
+        <textarea id="chatInput" rows="1" placeholder="输入你的问题，Enter 发送，Shift+Enter 换行…"></textarea>
+        <button id="sendBtn" class="btn btn-primary">发送</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- 错误提示 toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
