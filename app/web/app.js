@@ -89,7 +89,41 @@ async function loadDocs() {
     item.innerHTML = `
       <button class="doc-del" title="删除文档">✕</button>
       <div class="doc-name">📄 ${escapeHtml(doc.file_name)}</div>
-      <div class="doc-meta">${doc.chunk_count} 个片段 · ${date}</div>`;
+      <div class="doc-meta">${doc.chunk_count} 个片段 · ${date}<span class="doc-hint">点击查看片段</span></div>`;
+
+    // 点击卡片 → 展开/收起片段预览（首次点击时懒加载）
+    item.addEventListener("click", async () => {
+      const existing = item.querySelector(".doc-chunks");
+      if (existing) {
+        existing.remove();
+        item.classList.remove("expanded");
+        return;
+      }
+      item.classList.add("expanded");
+      const panel = document.createElement("div");
+      panel.className = "doc-chunks";
+      panel.innerHTML = '<p class="chunk-tip">加载片段中…</p>';
+      // 点击预览面板内部不触发收起（方便选中复制文本）
+      panel.addEventListener("click", (e) => e.stopPropagation());
+      item.appendChild(panel);
+      try {
+        const r = await fetch(`/api/documents/${doc.doc_id}/chunks`);
+        if (!r.ok) throw new Error();
+        const data = await r.json();
+        panel.innerHTML = data.chunks
+          .map(
+            (c) => `
+            <div class="chunk-item">
+              <span class="chunk-no">#${c.index + 1}</span>
+              <span class="chunk-text">${escapeHtml(c.text)}</span>
+            </div>`
+          )
+          .join("");
+      } catch {
+        panel.innerHTML = '<p class="chunk-tip">片段加载失败，请重试</p>';
+      }
+    });
+
     item.querySelector(".doc-del").addEventListener("click", async (e) => {
       e.stopPropagation();
       if (!confirm(`确定删除《${doc.file_name}》吗？相关片段将一并移除。`)) return;
@@ -313,6 +347,8 @@ async function sendMessage() {
 
 sendBtn.addEventListener("click", sendMessage);
 inputEl.addEventListener("keydown", (e) => {
+  // 中文输入法选词的 Enter 不发送（isComposing 表示拼音还没上屏）
+  if (e.isComposing || e.keyCode === 229) return;
   // Enter 发送，Shift+Enter 换行
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();

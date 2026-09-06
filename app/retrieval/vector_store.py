@@ -83,6 +83,21 @@ class VectorStore:
             )
         ]
 
+    def get_by_doc(self, doc_id: str) -> list[dict]:
+        """取出某篇文档的全部片段（按片段序号排序），供前端点击文档时预览。"""
+        result = self._collection.get(
+            where={"doc_id": doc_id},
+            include=["documents", "metadatas"],
+        )
+        items = [
+            {"id": cid, "text": text, "metadata": meta}
+            for cid, text, meta in zip(
+                result["ids"], result["documents"], result["metadatas"], strict=True
+            )
+        ]
+        # 按切分时的片段序号排序，保证预览时是原文顺序
+        return sorted(items, key=lambda x: x["metadata"].get("index", 0))
+
     def delete_by_doc(self, doc_id: str) -> None:
         """删除某篇文档的所有片段。"""
         self._collection.delete(where={"doc_id": doc_id})

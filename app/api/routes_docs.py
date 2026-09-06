@@ -44,6 +44,15 @@ def list_documents() -> list[dict]:
     return pipeline.list_documents()
 
 
+@router.get("/{doc_id}/chunks")
+def get_document_chunks(doc_id: str) -> dict:
+    """获取某文档的全部片段（前端点击文档卡片时预览原文用）。"""
+    chunks = pipeline.get_document_chunks(doc_id)
+    if chunks is None:
+        raise HTTPException(status_code=404, detail="文档不存在或已被删除")
+    return {"doc_id": doc_id, "chunks": chunks}
+
+
 @router.delete("/{doc_id}")
 def delete_document(doc_id: str) -> dict:
     """删除指定文档及其全部片段。"""

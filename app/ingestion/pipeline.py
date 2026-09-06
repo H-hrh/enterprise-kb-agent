@@ -110,6 +110,19 @@ class IngestionPipeline:
         # 新上传的排前面
         return sorted(agg.values(), key=lambda doc: doc["created_at"], reverse=True)
 
+    def get_document_chunks(self, doc_id: str) -> list[dict] | None:
+        """返回某文档的全部片段（按原文顺序）；文档不存在返回 None。
+
+        供前端点击文档卡片时预览片段内容。
+        """
+        items = self.vector_store.get_by_doc(doc_id)
+        if not items:
+            return None  # 本项目切分后不会有空文档，空即视为文档不存在
+        return [
+            {"index": item["metadata"].get("index", 0), "text": item["text"]}
+            for item in items
+        ]
+
     def delete_document(self, doc_id: str) -> bool:
         """删除文档（向量片段 + 原件 + 刷新索引）。返回是否删除了内容。"""
         all_chunks = self.vector_store.get_all()

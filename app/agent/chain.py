@@ -49,6 +49,15 @@ class QAChain:
             return
 
         try:
+            # ---------- ⓪ 闲聊/元问题直答（"你是谁"检索必然兜底，直接友好回复）----------
+            chitchat = prompts.match_chitchat(question)
+            if chitchat:
+                yield {"type": "sources", "data": []}
+                yield {"type": "token", "data": chitchat}
+                self.memory.add_turn(session_id, question, chitchat)
+                yield {"type": "done", "data": {"rewritten_query": None}}
+                return
+
             # ---------- ① 问题改写（仅多轮对话时触发）----------
             history = self.memory.get_history(session_id)
             retrieval_query = question  # 默认用原问题检索
